@@ -1,0 +1,5 @@
+cloudflared
+tests/
+tools/
+prompt.md
+*.zip
