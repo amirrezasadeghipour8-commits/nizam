@@ -3,6 +3,36 @@
 (function () {
   'use strict';
 
+  /* ---------- ورود و خروج (Supabase Auth) ----------
+     supabase.js یک ماژول است و همیشه بعد از پایان تحلیلِ سند اجرا می‌شود؛
+     پس این قبل از DOMContentLoaded اجرا نمی‌شود. بدون نشستِ معتبر به صفحهٔ
+     ورود می‌رویم. */
+  function authGuard() {
+    var s = window.supabaseSession;
+    if (!s || !s.user) location.replace('login.html');
+  }
+  /* وقتی حودث ورود/خروج در این تب یا تب دیگر رخ می‌دهد، صفحه واکنش نشان می‌دهد. */
+  function initAuth() {
+    var sc = window.supabaseClient;
+    if (!sc) return;
+    try {
+      sc.auth.onAuthStateChange(function (event, session) {
+        window.supabaseSession = session;
+        if (event === 'SIGNED_OUT') { location.replace('login.html'); return; }
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') render();
+      });
+    } catch (e) {
+      console.error('Nizam: خطا در ثبت شنوندهٔ وضعیت ورود', e);
+    }
+  }
+  function whenAuthReady() {
+    authGuard();
+    initAuth();
+    render(); /* ایمیل و دکمهٔ خروج را بعد از آماده‌شدن supabase نشان می‌دهد */
+  }
+  if (window.supabaseSession !== undefined) whenAuthReady();
+  else document.addEventListener('DOMContentLoaded', whenAuthReady);
+
   var Jalali = window.Jalali;
   var Logic = window.Logic;
   var Defaults = window.Defaults;
@@ -605,6 +635,16 @@
   function viewSettings() {
     var s = state.settings;
     var html = '';
+    var sess = window.supabaseSession;
+
+    html += '<section class="card"><h2 class="card-title">حساب کاربری</h2>';
+    if (sess && sess.user) {
+      html += '<p class="muted small">وارد شده با ایمیل: <strong>' + esc(sess.user.email || '') + '</strong></p>' +
+        '<button class="btn block danger" data-act="signout">خروج از حساب</button>';
+    } else {
+      html += '<p class="muted small">وارد حساب نشده‌اید.</p>';
+    }
+    html += '</section>';
 
     html += '<section class="card"><h2 class="card-title">' + icon('settings') + ' تنظیمات پایه</h2>' +
       '<label class="field"><span>پوسته</span><select class="input" data-bind="settings.theme" data-render="1">' +
@@ -1020,6 +1060,15 @@
           Store.clear();
           state = Defaults.defaultState();
           save(); render(); toast('همه داده‌ها پاک شد');
+        });
+        break;
+      }
+      case 'signout': {
+        if (!window.supabaseClient) { toast('سیستم ورود آماده نیست'); break; }
+        confirmDialog('از حساب خارج شوی؟ داده‌های محلی روی همین مرورگر باقی می‌مانند.', function () {
+          window.supabaseClient.auth.signOut()
+            .then(function () { location.replace('login.html'); })
+            .catch(function () { toast('خروج ناموفق بود؛ دوباره تلاش کن'); });
         });
         break;
       }

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ورود — نظام</title>
+  <meta name="description" content="ورود به نظام — داشبورد زندگی شخصی">
+  <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .auth-wrap { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+    .auth-card { max-width: 380px; margin: 0 auto; width: 100%; }
+    .auth-brand { display: flex; align-items: center; gap: 8px; justify-content: center; margin-bottom: 14px; }
+    .auth-title { text-align: center; font-size: 16px; font-weight: 700; margin: 0 0 14px; }
+    .auth-error { color: var(--danger); background: var(--warn-soft); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 13px; margin: 0 0 10px; }
+    .auth-note { text-align: center; font-size: 12px; margin-top: 12px; }
+    .auth-submit { width: 100%; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <main class="view auth-wrap">
+    <section class="card auth-card">
+      <div class="auth-brand">
+        <span class="brand-mark" aria-hidden="true">ن</span>
+        <span class="brand-name">نظام</span>
+      </div>
+      <h1 class="auth-title" id="title">ورود به حساب</h1>
+
+      <div class="segmented" id="tabs" role="tablist" aria-label="ورود یا ثبت‌نام">
+        <button class="seg active" type="button" data-mode="signin" aria-selected="true">ورود</button>
+        <button class="seg" type="button" data-mode="signup" aria-selected="false">ثبت‌نام</button>
+      </div>
+
+      <form id="auth-form" novalidate>
+        <p class="auth-error" id="error" hidden></p>
+        <label class="field"><span>ایمیل</span>
+          <input class="input" type="email" id="email" autocomplete="email" dir="ltr" placeholder="you@example.com">
+        </label>
+        <label class="field"><span>رمز عبور</span>
+          <input class="input" type="password" id="password" autocomplete="current-password" dir="ltr">
+        </label>
+        <button class="btn auth-submit" type="submit" id="submit-btn">ورود</button>
+      </form>
+
+      <p class="muted small auth-note">داده‌های داشبورد با همین حساب همگام می‌شود و همراه با نسخهٔ محلی مرورگر نگه داشته می‌شود.</p>
+    </section>
+  </main>
+
+  <script type="module">
+    import { supabaseClient } from './js/supabase.js';
+
+    var tabs = document.getElementById('tabs');
+    var form = document.getElementById('auth-form');
+    var emailInput = document.getElementById('email');
+    var passwordInput = document.getElementById('password');
+    var errorEl = document.getElementById('error');
+    var titleEl = document.getElementById('title');
+    var submitBtn = document.getElementById('submit-btn');
+    var mode = 'signin';
+
+    /* اگر از قبل وارد شده، مستقیم به داشبورد می‌رویم */
+    if (window.supabaseSession && window.supabaseSession.user) {
+      location.replace('index.html');
+    }
+
+    function setError(msg) { errorEl.textContent = msg; errorEl.hidden = false; }
+    function clearError() { errorEl.hidden = true; }
+
+    function setMode(m) {
+      mode = m;
+      clearError();
+      Array.prototype.forEach.call(tabs.querySelectorAll('.seg'), function (b) {
+        var on = b.dataset.mode === m;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      titleEl.textContent = m === 'signin' ? 'ورود به حساب' : 'ثبت‌نام';
+      submitBtn.textContent = m === 'signin' ? 'ورود' : 'ثبت‌نام';
+      passwordInput.autocomplete = m === 'signin' ? 'current-password' : 'new-password';
+    }
+
+    tabs.addEventListener('click', function (e) {
+      var b = e.target.closest('.seg');
+      if (b) setMode(b.dataset.mode);
+    });
+
+    /* ترجمهٔ پیام‌های رایج Supabase به فارسی */
+    function faError(raw) {
+      var m = String(raw || '').toLowerCase();
+      if (m.indexOf('invalid login credentials') >= 0) return 'ایمیل یا رمز عبور اشتباه است.';
+      if (m.indexOf('already registered') >= 0) return 'این ایمیل قبلاً ثبت شده است؛ با «ورود» ادامه بده.';
+      if (m.indexOf('email not confirmed') >= 0) return 'ایمیل هنوز تأیید نشده؛ صندوق ورودی ایمیل را بررسی کن.';
+      if (m.indexOf('at least 6 characters') >= 0) return 'رمز عبور باید دست‌کم ۶ حرف باشد.';
+      if (m.indexOf('rate limit') >= 0 || m.indexOf('too many requests') >= 0) return 'کمی صبر کن و دوباره تلاش کن.';
+      return 'خطایی رخ داد؛ دوباره تلاش کن.';
+    }
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      clearError();
+      var email = emailInput.value.trim();
+      var password = passwordInput.value;
+      if (!email || !password) { setError('ایمیل و رمز عبور را وارد کن.'); return; }
+      if (!/^\S+@\S+\.\S+$/.test(email)) { setError('ایمیل معتبر نیست.'); return; }
+      submitBtn.disabled = true;
+      submitBtn.textContent = mode === 'signin' ? 'در حال ورود…' : 'در حال ثبت‌نام…';
+      var res = mode === 'signin'
+        ? await supabaseClient.auth.signInWithPassword({ email: email, password: password })
+        : await supabaseClient.auth.signUp({ email: email, password: password });
+      submitBtn.disabled = false;
+      submitBtn.textContent = mode === 'signin' ? 'ورود' : 'ثبت‌نام';
+      if (res.error) { setError(faError(res.error.message)); return; }
+      if (res.data.session) { location.replace('index.html'); return; }
+      if (res.data.user) {
+        setError('ایمیل تأیید فرستاده شد؛ صندوق ورودی‌ات را بررسی کن و سپس وارد شو.');
+        setMode('signin');
+        return;
+      }
+    });
+  </script>
+</body>
+</html>

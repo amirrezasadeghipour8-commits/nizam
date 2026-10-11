@@ -95,7 +95,7 @@ global.window = {
   matchMedia: function () { return { matches: false, addEventListener: function () {} }; },
   addEventListener: function (t, fn) { (winListeners[t] = winListeners[t] || []).push(fn); },
   scrollTo: function () {},
-  location: { hash: '' }
+  location: { hash: '', replace: function () {} },
 };
 global.document = documentShim;
 Object.defineProperty(global, 'navigator', { value: { onLine: true }, configurable: true, writable: true });
@@ -139,6 +139,7 @@ fireRoute('#/settings');
 expect(view.innerHTML.indexOf('داده‌ها و پشتیبان‌گیری') >= 0, 'صفحه تنظیمات رندر شد');
 expect(view.innerHTML.indexOf('importFile') >= 0, 'ورودی فایل پشتیبان فقط در صفحه تنظیمات ساخته می‌شود');
 expect(view.innerHTML.indexOf('ویرایش برنامه روزانه') >= 0, 'ویرایشگر برنامه در تنظیمات هست');
+expect(view.innerHTML.indexOf('حساب کاربری') >= 0, 'بخش حساب کاربری در تنظیمات هست');
 
 /* ---------- تعامل: تیک‌زدن یک کار و بررسی ماندگاری ---------- */
 fireRoute('#/today');

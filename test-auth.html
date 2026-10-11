@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تست اتصال Supabase</title>
+  <style>
+    body { font-family: system-ui; padding: 20px; background: #0f172a; color: #e2e8f0; }
+    #output { background: #1e293b; padding: 15px; border-radius: 8px; white-space: pre-wrap; font-family: monospace; font-size: 13px; }
+    button { padding: 12px 20px; font-size: 16px; margin: 10px 0; background: #38bdf8; border: none; border-radius: 6px; cursor: pointer; }
+    .ok { color: #4ade80; }
+    .err { color: #f87171; }
+  </style>
+</head>
+<body>
+  <h1>تست اتصال Supabase</h1>
+  <button onclick="runTest()">شروع تست</button>
+  <div id="output">آماده...</div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    const URL = 'https://jranepomjeeeezjsqys.supabase.co';
+    const KEY = 'sb_publishable_e6It3SVY14DR1e1l1MuCKg__bLnAc7Y';
+
+    window.runTest = async function() {
+      const out = document.getElementById('output');
+      out.textContent = 'در حال تست...\n';
+
+      // تست ۱: ساخت کلاینت
+      try {
+        const client = createClient(URL, KEY);
+        out.textContent += '✅ کلاینت ساخته شد\n';
+      } catch (e) {
+        out.innerHTML += '<span class="err">❌ خطا در ساخت کلاینت: ' + e.message + '</span>\n';
+        return;
+      }
+
+      const client = createClient(URL, KEY);
+
+      // تست ۲: اتصال به دیتابیس (خواندن جدول)
+      try {
+        const { data, error } = await client.from('user_state').select('*').limit(1);
+        if (error) {
+          out.innerHTML += '<span class="err">❌ خطا در اتصال به جدول: ' + JSON.stringify(error) + '</span>\n';
+        } else {
+          out.innerHTML += '<span class="ok">✅ اتصال به جدول OK (تعداد ردیف: ' + (data ? data.length : 0) + ')</span>\n';
+        }
+      } catch (e) {
+        out.innerHTML += '<span class="err">❌ خطای شبکه در اتصال: ' + e.message + '</span>\n';
+      }
+
+      // تست ۳: تست ثبت‌نام
+      const testEmail = 'test' + Date.now() + '@example.com';
+      try {
+        const { data, error } = await client.auth.signUp({
+          email: testEmail,
+          password: 'TestPassword123!'
+        });
+        if (error) {
+          out.innerHTML += '<span class="err">❌ خطای ثبت‌نام: ' + JSON.stringify(error) + '</span>\n';
+        } else {
+          out.innerHTML += '<span class="ok">✅ ثبت‌نام OK!</span>\n';
+          out.innerHTML += 'User ID: ' + (data.user ? data.user.id : 'null') + '\n';
+          out.innerHTML += 'Session: ' + (data.session ? 'وجود دارد' : 'null') + '\n';
+        }
+      } catch (e) {
+        out.innerHTML += '<span class="err">❌ خطای غیرمنتظره در ثبت‌نام: ' + e.message + '</span>\n';
+      }
+    };
+  </script>
+</body>
+</html>

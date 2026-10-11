@@ -2,16 +2,18 @@
    پوسته برنامه را پیش‌بارگذاری می‌کند تا داشبورد پس از نخستین بارگذاری آفلاین کار کند. */
 'use strict';
 
-var CACHE = 'nizam-shell-v1';
+var CACHE = 'nizam-shell-v2';
 var ASSETS = [
   './',
   './index.html',
+  './login.html',
   './manifest.webmanifest',
   './css/styles.css',
   './js/jalali.js',
   './js/defaults.js',
   './js/logic.js',
   './js/store.js',
+  './js/supabase.js',
   './js/app.js',
   './icons/favicon.svg',
   './icons/icon-192.png',
