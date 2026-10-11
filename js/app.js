@@ -78,7 +78,9 @@
     clearTimeout(toast._t);
     toast._t = setTimeout(function () { toastEl.classList.remove('show'); }, 1900);
   }
-  function save() { Store.save(state); }
+  function save() {
+    if (!Store.save(state)) toast('ذخیره نشد — حافظهٔ مرورگر پر است');
+  }
   function rerender() { render(); }
 
   function ensureDay(key) {
@@ -378,8 +380,9 @@
   function viewWeek() {
     if (!ui.weekStart) ui.weekStart = Logic.weekStart(Logic.todayKey());
     var start = ui.weekStart;
-    // اطمینان از ساخته‌شدن روزهای هفته برای نمایش «برنامه‌ریزی‌شده»
-    Logic.weekDates(start).forEach(function (k) { ensureDay(k); });
+    // فقط هفتهٔ جاری و آینده ساخته می‌شود؛ هفته‌های گذشته با الگوهای کنونی بازنویسی نمی‌شوند
+    var thisWeekStart = Logic.weekStart(Logic.todayKey());
+    Logic.weekDates(start).forEach(function (k) { if (k >= thisWeekStart) ensureDay(k); });
 
     var ws = Logic.weekStats(state, start);
     var c = ws.categories;
@@ -785,13 +788,16 @@
     if (el.dataset.render === '1' || el.tagName === 'SELECT') render();
   });
 
+  /* ذخیرهٔ خودکار هنگام تایپ، با کمی تأخیر تا هر کاراکتر کل state را ننویسد */
+  var inputSaveTimer = null;
   document.addEventListener('input', function (e) {
     var el = e.target.closest('[data-bind]');
     if (!el) return;
     if (el.type === 'checkbox') return;
     var val = el.type === 'number' ? (el.value === '' ? '' : Number(el.value)) : el.value;
     setByPath(state, el.dataset.bind, val);
-    save();
+    clearTimeout(inputSaveTimer);
+    inputSaveTimer = setTimeout(save, 300);
   });
 
   document.addEventListener('click', function (e) {

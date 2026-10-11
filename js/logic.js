@@ -95,7 +95,8 @@
   /* اطمینان از وجود روز و اضافه‌کردن کارهای تکرارشونده‌ی جدید (بدون دست‌زدن به تاریخ) */
   function ensureDay(state, key) {
     var day = state.days[key];
-    if (!day) {
+    /* روز ناسازگار (مثلاً رشته از یک پشتیبان خراب) تازه ساخته می‌شود */
+    if (!day || typeof day !== 'object' || Array.isArray(day) || !Array.isArray(day.tasks)) {
       day = { date: key, tasks: materializeTasks(state, key), priorities: [], note: '' };
       state.days[key] = day;
       return day;
@@ -174,7 +175,9 @@
     });
     days.forEach(function (key) {
       if (key >= today) return;
-      (state.days[key].tasks || []).forEach(function (t) {
+      var d = state.days[key];
+      if (!d) return;
+      (d.tasks || []).forEach(function (t) {
         if (t.status === 'skipped') postponed.push({ title: t.title, from: key });
       });
     });

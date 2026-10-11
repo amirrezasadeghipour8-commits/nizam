@@ -55,7 +55,16 @@
     }
     if (isPlainObject(saved.roadmap)) {
       out.roadmap = Object.assign(base.roadmap, saved.roadmap);
-      if (Array.isArray(saved.roadmap.phases)) out.roadmap.phases = saved.roadmap.phases;
+      if (Array.isArray(saved.roadmap.phases)) {
+        out.roadmap.phases = saved.roadmap.phases.map(function (ph) {
+          if (ph && Array.isArray(ph.goals)) {
+            ph.goals = ph.goals.map(function (g) {
+              return typeof g === 'string' ? { text: g, done: false } : g;
+            });
+          }
+          return ph;
+        });
+      }
     }
     if (isPlainObject(saved.meta)) out.meta = Object.assign(base.meta, saved.meta);
     return out;

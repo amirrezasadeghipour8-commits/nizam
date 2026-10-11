@@ -46,6 +46,12 @@ self.addEventListener('fetch', function (event) {
   if (req.mode === 'navigate') {
     event.respondWith(
       caches.match('./index.html').then(function (cached) {
+        /* به‌روزرسانی پوسته در پس‌زمینه تا تحویل بعدی هم به کاربر برسد */
+        fetch(req).then(function (res) {
+          if (res && res.status === 200 && res.type === 'basic') {
+            caches.open(CACHE).then(function (c) { c.put('./index.html', res); });
+          }
+        }).catch(function () {});
         return cached || fetch(req).catch(function () { return caches.match('./'); });
       })
     );
