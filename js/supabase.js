@@ -4,8 +4,8 @@
    از supabaseClient استفاده کنند. */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const SUPABASE_URL = 'https://jranepomjeeeezjsqys.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_e6It3SVY14DR1e1l1MuCKg__bLnAc7Y';
+const SUPABASE_URL = 'https://yyipxduhaxlksjwpeyxg.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_NczbYABt_TL8TpZJoDlV6g_0I83Hm3F';
 
 export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 window.supabaseClient = supabaseClient;
