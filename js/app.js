@@ -1,6 +1,6 @@
 /* Nizam — رابط کاربری و منطق تعامل.
    برنامه تک‌صفحه‌ای بدون فریم‌ورک، با مسیریابی مبتنی بر hash. */
-(function () {
+(async function () {
   'use strict';
 
   /* ---------- ورود و خروج (Supabase Auth) ----------
@@ -19,7 +19,7 @@
       sc.auth.onAuthStateChange(function (event, session) {
         window.supabaseSession = session;
         if (event === 'SIGNED_OUT') { location.replace('login.html'); return; }
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') render();
+        if (state && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) render();
       });
     } catch (e) {
       console.error('Nizam: خطا در ثبت شنوندهٔ وضعیت ورود', e);
@@ -28,7 +28,7 @@
   function whenAuthReady() {
     authGuard();
     initAuth();
-    render(); /* ایمیل و دکمهٔ خروج را بعد از آماده‌شدن supabase نشان می‌دهد */
+    if (state) render(); /* اگر load هنوز تمام نشده، رندر انتهای فایل کافی است */
   }
   if (window.supabaseSession !== undefined) whenAuthReady();
   else document.addEventListener('DOMContentLoaded', whenAuthReady);
@@ -38,7 +38,17 @@
   var Defaults = window.Defaults;
   var Store = window.Store;
 
-  var state = Store.load();
+  /* ماژول supabase.js بعد از پایان تحلیل سند اجرا می‌شود؛ تا آن لحظه نشست
+     مشخص نیست. حداکثر ۵ ثانیه صبر می‌کنیم تا راه‌اندازی معطل نماند. */
+  if (window.supabaseSession === undefined && document.readyState === 'loading') {
+    await new Promise(function (resolve) {
+      var done = false;
+      function fin() { if (!done) { done = true; resolve(); } }
+      document.addEventListener('DOMContentLoaded', fin);
+      setTimeout(fin, 5000);
+    });
+  }
+  var state = await Store.load();
   var view = document.getElementById('view');
   var modal = document.getElementById('modal');
   var toastEl = document.getElementById('toast');
@@ -108,8 +118,9 @@
     clearTimeout(toast._t);
     toast._t = setTimeout(function () { toastEl.classList.remove('show'); }, 1900);
   }
-  function save() {
-    if (!Store.save(state)) toast('ذخیره نشد — حافظهٔ مرورگر پر است');
+  /* نوشتن محلی همین لحظه انجام می‌شود؛ فراخوان‌ها مجبور به انتظار نیستند. */
+  async function save() {
+    if (!(await Store.save(state))) toast('ذخیره نشد — حافظهٔ مرورگر پر است');
   }
   function rerender() { render(); }
 
@@ -1056,8 +1067,8 @@
         break;
       }
       case 'reset': {
-        confirmDialog('همه داده‌ها و سابقه پاک شود؟ این کار برگشت‌پذیر نیست.', function () {
-          Store.clear();
+        confirmDialog('همه داده‌ها و سابقه پاک شود؟ این کار برگشت‌پذیر نیست.', async function () {
+          await Store.clear();
           state = Defaults.defaultState();
           save(); render(); toast('همه داده‌ها پاک شد');
         });
